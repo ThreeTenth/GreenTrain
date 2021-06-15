@@ -150,6 +150,7 @@
                 item.innerHTML = html ? value : ("<b>" + value + "</b>");
                 item.style.textAlign = "center"
                 item.style.margin = "20px 0"
+                item.style.color = "grey"
 
                 return item
             }
@@ -209,7 +210,13 @@
             var user = getPassenger()
             onUserHandle("PUT", user, function () {
                 if (window["WebSocket"]) {
-                    conn = new WebSocket("ws://" + document.location.host + "/start?userId=" + user.id);
+                    var protocol
+                    if ("https:" === document.location.protocol) {
+                        protocol = "wss://"
+                    } else {
+                        protocol = "ws://"
+                    }
+                    conn = new WebSocket(protocol + document.location.host + "/start?userId=" + user.id);
                     conn.onopen = function (evt) {
                         appendLog(generateLog(welcome));
                         appendLog(generateLog(welcome1));
