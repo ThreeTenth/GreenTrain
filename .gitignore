@@ -4,12 +4,21 @@
 *.dll
 *.so
 *.dylib
+__debug_bin
+greentrain
 
 # Test binary, built with `go test -c`
 *.test
+
+# test file
+*_test.*
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# packr2 generate
+packrd/
+main-packr.go

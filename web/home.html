@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <title>🚂 Freely and unfettered chat -- Green Train</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <script type="text/javascript">
+
+        const welcome = "欢迎乘坐绿皮车~呜~呜~"
+        const welcome1 = "回复 :资料 ，可以设置自己的用户信息"
+        const welcome2 = `绿皮车的代码已在 <a href="https://github.com/ThreeTenth/GreenTrain" target="_blank">GitHub</a> 开源，欢迎 Star`
+
+        var likes = [];
+
+        function createXMLHttpRequest() {
+            var xmlHttp;
+            if (window.XMLHttpRequest) {
+                xmlHttp = new XMLHttpRequest();
+                if (xmlHttp.overrideMimeType)
+                    xmlHttp.overrideMimeType('text/xml');
+            } else if (window.ActiveXObject) {
+                try {
+                    xmlHttp = new ActiveXObject("Msxml2.XMLHTTP");
+                } catch (e) {
+                    try {
+                        xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    } catch (e) {
+                    }
+                }
+            }
+            return xmlHttp;
+        }
+
+        function onUserHandle(method, user, callback) {
+            var xmlHttp = createXMLHttpRequest();
+            xmlHttp.open(method, "/user", true);// 异步处理返回
+            xmlHttp.onreadystatechange = function () {
+                if (xmlHttp.readyState == 4) {
+                    callback ? callback(xmlHttp.status == 200) : null;
+                }
+            };
+
+            xmlHttp.setRequestHeader("Content-Type", "application/json;");
+            xmlHttp.send(JSON.stringify(user));
+        }
+
+        function getPassenger() {
+            const passenger = localStorage.getItem('passenger');
+            var user = JSON.parse(passenger)
+            if (user == null) {
+                user = {
+                    id: uuidv4()
+                }
+                localStorage.setItem('passenger', JSON.stringify(user));
+            }
+            return user
+        }
+
+        window.onload = function () {
+            var conn;
+            var form = document.getElementById("form")
+            var msg = document.getElementById("msg");
+            var log = document.getElementById("log");
+
+            var modal = document.getElementById("modal")
+            var updateSet = document.getElementById("updateSet")
+            var likes = document.getElementById("likes")
+            var dislikes = document.getElementById("dislikes")
+            var hi = document.getElementById("hi")
+
+            var likesEl = document.querySelector('input[id=likes]')
+            var dislikesEl = document.querySelector('input[id=dislikes]')
+            var hiEl = document.getElementById("hi")
+
+            var whitelist = ["A# .NET", "A# (Axiom)", "A-0 System", "A+", "A++", "ABAP", "ABC", "ABC ALGOL", "ABSET", "ABSYS", "ACC", "Accent", "Ace DASL", "ACL2", "Avicsoft", "ACT-III", "Action!", "ActionScript", "Ada", "Adenine", "Agda", "Agilent VEE", "Agora", "AIMMS", "Alef", "ALF", "ALGOL 58", "ALGOL 60", "ALGOL 68", "ALGOL W", "Alice", "Alma-0", "AmbientTalk", "Amiga E", "AMOS", "AMPL", "Apex (Salesforce.com)", "APL", "AppleScript", "Arc", "ARexx", "Argus", "AspectJ", "Assembly language", "ATS", "Ateji PX", "AutoHotkey", "Autocoder", "AutoIt", "AutoLISP / Visual LISP", "Averest", "AWK", "Axum", "Active Server Pages", "ASP.NET", "B", "Babbage", "Bash", "BASIC", "bc", "BCPL", "BeanShell", "Batch (Windows/Dos)", "Bertrand", "BETA", "Bigwig", "Bistro", "BitC", "BLISS", "Blockly", "BlooP", "Blue", "Boo", "Boomerang", "Bourne shell (including bash and ksh)", "BREW", "BPEL", "B", "C--", "C++ – ISO/IEC 14882", "C# – ISO/IEC 23270", "C/AL", "Caché ObjectScript", "C Shell", "Caml", "Cayenne", "CDuce", "Cecil", "Cesil", "Céu", "Ceylon", "CFEngine", "CFML", "Cg", "Ch", "Chapel", "Charity", "Charm", "Chef", "CHILL", "CHIP-8", "chomski", "ChucK", "CICS", "Cilk", "Citrine (programming language)", "CL (IBM)", "Claire", "Clarion", "Clean", "Clipper", "CLIPS", "CLIST", "Clojure", "CLU", "CMS-2", "COBOL – ISO/IEC 1989", "CobolScript – COBOL Scripting language", "Cobra", "CODE", "CoffeeScript", "ColdFusion", "COMAL", "Combined Programming Language (CPL)", "COMIT", "Common Intermediate Language (CIL)", "Common Lisp (also known as CL)", "COMPASS", "Component Pascal", "Constraint Handling Rules (CHR)", "COMTRAN", "Converge", "Cool", "Coq", "Coral 66", "Corn", "CorVision", "COWSEL", "CPL", "CPL", "Cryptol", "csh", "Csound", "CSP", "CUDA", "Curl", "Curry", "Cybil", "Cyclone", "Cython", "Java", "Javascript", "M2001", "M4", "M#", "Machine code", "MAD (Michigan Algorithm Decoder)", "MAD/I", "Magik", "Magma", "make", "Maple", "MAPPER now part of BIS", "MARK-IV now VISION:BUILDER", "Mary", "MASM Microsoft Assembly x86", "MATH-MATIC", "Mathematica", "MATLAB", "Maxima (see also Macsyma)", "Max (Max Msp – Graphical Programming Environment)", "Maya (MEL)", "MDL", "Mercury", "Mesa", "Metafont", "Microcode", "MicroScript", "MIIS", "Milk (programming language)", "MIMIC", "Mirah", "Miranda", "MIVA Script", "ML", "Model 204", "Modelica", "Modula", "Modula-2", "Modula-3", "Mohol", "MOO", "Mortran", "Mouse", "MPD", "Mathcad", "MSIL – deprecated name for CIL", "MSL", "MUMPS", "Mystic Programming L"];
+
+            var likesTagify = bindTagify(likesEl)
+            var dislikesTagify = bindTagify(dislikesEl)
+
+            var hiTagify = new Tagify(hiEl, {
+                //  mixTagsInterpolator: ["{{", "}}"],
+                mode: 'mix',  // <--  Enable mixed-content
+                pattern: /@|#/,  // <--  Text starting with @ or # (if single, String can be used here)
+                tagTextProp: 'text',  // <-- the default property (from whitelist item) for the text to be rendered in a tag element.
+            })
+
+            function bindTagify(input) {
+                // initialize Tagify on the above input node reference
+                var tagify = new Tagify(input, {
+                    whitelist: input.value.trim().split(/\s*,\s*/) // Array of values. stackoverflow.com/a/43375571/104380
+                })
+
+                // Chainable event listeners
+                tagify.on('input', function (e) {
+                    if (e.detail.value.length <= 1) return
+
+                    console.log("onInput: ", e.detail);
+                    tagify.settings.whitelist = whitelist // add already-existing tags to the new whitelist array
+                    tagify
+                        // render the suggestions dropdown.
+                        .dropdown.show(e.detail.value);
+                })
+
+                return tagify
+            }
+
+            function showSettings() {
+                modal.style.display = ''
+                msg.value = "";
+
+                const user = getPassenger()
+                likesTagify.addTags(user.likes)
+                dislikesTagify.addTags(user.dislikes)
+            }
+
+            function generateLog(value, align = "left", bg = "white", html = false) {
+                var item = document.createElement("div");
+                var span = document.createElement("div");
+                if (html) {
+                    span.innerHTML = value;
+                } else {
+                    span.innerText = value;
+                }
+                span.classList = "chat-li " + align
+                span.style.backgroundColor = bg
+                item.style.textAlign = align
+                item.style.paddingTop = "18px"
+                item.appendChild(span)
+
+                return item
+            }
+
+            function generateSys(value, html = false) {
+                var item = document.createElement("div");
+                item.innerHTML = html ? value : ("<b>" + value + "</b>");
+                item.style.textAlign = "center"
+                item.style.margin = "20px 0"
+
+                return item
+            }
+
+            function appendLog(item) {
+                var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+                log.appendChild(item);
+                if (doScroll) {
+                    log.scrollTop = log.scrollHeight;
+                }
+            }
+
+            form.onsubmit = function (evt) {
+                if (!conn) {
+                    return false;
+                }
+                const value = msg.value
+                if (!value) {
+                    return false;
+                }
+                msg.value = "";
+                if (value === ":资料" || value === "：资料") {
+                    window.setTimeout(showSettings, 10);
+                    return false
+                }
+                conn.send(value);
+                msg.value = "";
+
+                appendLog(generateLog(value, "right", "var(--primary)"))
+
+                return false;
+            };
+
+            document.getElementById("updateSet").onclick = function () {
+                var user = getPassenger()
+                if (hi.value) {
+                    user.hi = hi.value
+                }
+                if (likes.value) {
+                    user.likes = JSON.parse(likes.value).map(item => item.value)
+                }
+                if (dislikes.value) {
+                    user.dislikes = JSON.parse(dislikes.value).map(item => item.value)
+                }
+                console.log(user);
+                onUserHandle("PUSH", user, function (ok) {
+                    appendLog(generateSys(ok ? "Update successful" : "Update failed"))
+                    modal.style.display = "none"
+                })
+                localStorage.setItem('passenger', JSON.stringify(user));
+            }
+
+            document.getElementById("closeSet").onclick = function () {
+                modal.style.display = "none"
+            }
+
+            var user = getPassenger()
+            onUserHandle("PUT", user, function () {
+                if (window["WebSocket"]) {
+                    conn = new WebSocket("ws://" + document.location.host + "/start?userId=" + user.id);
+                    conn.onopen = function (evt) {
+                        appendLog(generateLog(welcome));
+                        appendLog(generateLog(welcome1));
+                        appendLog(generateLog(welcome2, "left", "white", true));
+                        appendLog(generateSys("End of introduction"));
+                        msg.focus()
+                    }
+                    conn.onclose = function (evt) {
+                        appendLog(generateSys("Connection closed, please refresh and try again."));
+                    };
+                    conn.onerror = function (evt) {
+                        appendLog(generateSys("Connection error."));
+                    }
+                    conn.onmessage = function (evt) {
+                        var messages = evt.data.split('\n');
+                        for (var i = 0; i < messages.length; i++) {
+                            appendLog(generateLog(messages[i]))
+                        }
+                    };
+                } else {
+                    appendLog(generateSys("Your browser does not support WebSockets."));
+                }
+            })
+        };
+
+        var xmlHttp = createXMLHttpRequest()
+        xmlHttp.open("GET", "/likes", true)
+        xmlHttp.onreadystatechange = function (evt) {
+            if (xmlHttp.readyState == 4) {
+                likes = JSON.parse(evt.target.response)
+                console.log(evt, likes);
+            }
+        }
+
+        xmlHttp.send()
+    </script>
+    <link href="https://cdn.jsdelivr.net/combine/gh/yaireo/tagify@4.3.0/dist/tagify.css" rel="stylesheet">
+    <style type="text/css">
+        * {
+            /* CSS 中的 box-sizing 属性定义了 user agent 应该如何计算一个元素的总宽度和总高度。 */
+            /* see https://developer.mozilla.org/zh-CN/docs/Web/CSS/box-sizing */
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1b8b17;
+            --secondary: #E02E06;
+            --text-main: #1a1a1a;
+            --border-radius: 3px;
+            --bg-color: #f5fcf5;
+        }
+
+        body {
+            padding: 0;
+            margin: 0;
+            background-color: var(--bg-color);
+        }
+
+        button,
+        input[type="submit"] {
+            color: var(--bg-color);
+            background-color: var(--primary);
+            border: none;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        #chat {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        #modal {
+            background: rgba(0, 0, 0, 0.30);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #settings {
+            width: 100%;
+            max-width: 960px;
+            max-height: calc(100vh - 60px);
+            background-color: white;
+            border-radius: 20px;
+            padding: 20px 30px;
+            margin: 20px;
+            box-shadow: 3px 3px var(--secondary);
+            overflow: auto;
+        }
+
+        #settings label {
+            color: var(--text-main);
+            margin: 10px 0 6px 0;
+            display: inline-block;
+        }
+
+        #settings button {
+            margin: 20px 20px;
+            padding: 10px 20px;
+            font-size: 1.1em;
+            border-radius: 2px;
+        }
+
+        .tagify--mix .tagify__input {
+            margin: 5px;
+            padding: .3em .5em;
+            padding: var(--tag-pad, .3em .5em);
+            min-height: 120px;
+        }
+
+        #log {
+            height: calc(100vh - 60px);
+            overflow: auto;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            height: 30px;
+            background-color: var(--primary);
+            -webkit-border-radius: 3px;
+            border-radius: 3px;
+            border-style: solid;
+            border-color: var(--primary);
+        }
+
+        ::-webkit-scrollbar-track-piece {
+            background-color: var(--bg-color);
+            /*滚动条的背景颜色*/
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            /*滚动条的宽度*/
+            height: 6px;
+            /*滚动条的高度*/
+        }
+
+        #form {
+            height: 60px;
+            display: flex;
+            padding: 3px 5px;
+        }
+
+        #form #msg {
+            flex: 1;
+        }
+
+        .chat-li {
+            font-size: 1.4em;
+            color: var(--text-main);
+            padding: 10px 30px;
+            border-radius: 10px;
+            display: inline-block
+        }
+
+        .chat-li.left {
+            margin-left: 5px;
+            margin-right: 100px;
+        }
+
+        .chat-li.right {
+            margin-left: 100px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Chat -->
+    <div id="chat">
+        <div id="log"></div>
+        <form id="form">
+            <input type="text" id="msg" autocomplete="off" />
+            <input type="submit" value="Send" />
+        </form>
+    </div>
+    <!-- Settings -->
+    <div id="modal" style="display: none;">
+        <div id="settings">
+            <h2>User info</h2>
+            <p>完善的信息可以为你找到更加合适旅友哦~</p>
+            <div id="set">
+                <label>Likes</label>
+                <input placeholder='write your likes' type="text" id="likes" />
+                <label>Dislikes</label>
+                <input placeholder='write your dislikes' type="text" id="dislikes" />
+                <label>Hi</label>
+                <textarea placeholder='Write your opening remarks' id="hi"></textarea>
+                <div style="display: flex; justify-content: center; align-items: center;">
+                    <button id="closeSet" style="background-color: var(--secondary);">Close</button>
+                    <button id="updateSet">Update</button>
+                    <a href="https://github.com/ThreeTenth/GreenTrain" target="_blank"><svg
+                            class="octicon octicon-mark-github v-align-middle" height="32" viewBox="0 0 16 16"
+                            version="1.1" width="32" aria-hidden="true">
+                            <path fill-rule="evenodd"
+                                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z">
+                            </path>
+                        </svg></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- About -->
+    <div id="about"></div>
+    <script>
+        var hi = document.getElementById("hi")
+        hi.value = getPassenger().hi
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/uuid@latest/dist/umd/uuidv4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/yaireo/tagify@4.3.0/dist/tagify.min.js"></script>
+</body>
+
+</html>
