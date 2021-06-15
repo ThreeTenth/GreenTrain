@@ -30,6 +30,8 @@ type Group struct {
 	duration int
 	// 当前用户组的共同喜好
 	likes []string
+	// 当前用户组的共同不喜欢的
+	dislikes []string
 }
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -139,12 +141,14 @@ func (h *Hub) run() {
 						sendMessage(h, friendClient, body.message)
 
 						likes, _ := friendClient.user.likes(me.user)
+						dislikes, _ := friendClient.user.dislikes(me.user)
 						group := &Group{
 							id:       len(h.groups),
 							users:    []string{me.user.ID, friendClient.user.ID},
 							duration: rand.Intn(30) + 5,
+							likes:    likes,
+							dislikes: dislikes,
 						}
-						group.likes = likes
 						h.groups[group.id] = group
 
 						go h.chat(group)
@@ -198,19 +202,24 @@ func (h *Hub) find(c *Client) {
 		}
 
 		_, likeGroupCount := c.user.likes(v.user)
-		_, dislikeGroupCount := c.user.disLikes(v.user)
+		_, dislikeGroupCount := c.user.dislikes(v.user)
+		_, mediffGroupCount := c.user.difflikes(v.user)
+		_, yourdiffGroupCount := v.user.difflikes(c.user)
+
+		likeCount := likeGroupCount + dislikeGroupCount
+		diffCount := mediffGroupCount + yourdiffGroupCount
 
 		// 讨厌的事物比共同喜好的事物要多时，则不考虑该旅友
-		if likeGroupCount < dislikeGroupCount {
+		if likeCount < diffCount {
 			continue
 		}
 
-		// 有五个共同爱好的，进第一优先列表
-		// 以下同理
+		// 有 7 个共同爱好的，进第一优先列表
+		// 其他同理
 
-		if 5 <= likeGroupCount {
+		if 7 <= likeCount {
 			keys1 = append(keys1, k)
-		} else if 3 <= likeGroupCount {
+		} else if 3 <= likeCount {
 			keys2 = append(keys2, k)
 		} else {
 			keys3 = append(keys3, k)
@@ -246,8 +255,10 @@ func (h *Hub) chat(g *Group) {
 		if client, ok := h.clients[userID]; ok {
 			sendMessage(h, client, []byte(fmt.Sprintf("开始旅行，本次旅行时间是 %v 分钟", g.duration)))
 			if 0 != len(g.likes) {
-				sendMessage(h, client, []byte("你们之间共同的喜好是："))
-				sendMessage(h, client, []byte(strings.Join(g.likes, ",")))
+				sendMessage(h, client, []byte("你们之间共同的喜好是："+strings.Join(g.likes, ",")))
+			}
+			if 0 != len(g.dislikes) {
+				sendMessage(h, client, []byte("你们都不喜欢的是："+strings.Join(g.dislikes, ",")))
 			}
 		}
 	}

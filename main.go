@@ -71,7 +71,7 @@ func likesHandle(h *Hub, w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	fmt.Println("v1.0.0")
+	fmt.Println("v1.1.0")
 	flag.Parse()
 	hub := newHub()
 	go hub.run()

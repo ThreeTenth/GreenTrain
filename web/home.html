@@ -6,11 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
     <script type="text/javascript">
 
-        const welcome = "欢迎乘坐绿皮车~呜~呜~"
-        const welcome1 = "回复 :资料 ，可以设置自己的用户信息"
-        const welcome2 = `绿皮车的代码已在 <a href="https://github.com/ThreeTenth/GreenTrain" target="_blank">GitHub</a> 开源，欢迎 Star`
+        const welcome = "呜~~呜~~，欢迎乘坐绿皮车~"
+        const welcome1 = "绿皮车是一个模拟列车旅行，随机遇见同座旅友的产品。在绿皮车上，我们随机匹配一个喜好相似的旅友，作为你本次旅行的朋友。"
+        const welcome2 = "当到达目的地后，我们挥一挥衣袖，把列车上的一切都给忘却。"
+        const welcome3 = `回复或者点击 "<a onclick="showSettings()">:资料</a>" ，可以设置自己的喜好`
 
-        var likes = [];
+        var userlikes = [];
 
         function createXMLHttpRequest() {
             var xmlHttp;
@@ -56,28 +57,52 @@
             return user
         }
 
+        function showSettings() {
+            modal.style.display = ''
+            msg.value = "";
+
+            const user = getPassenger()
+            likesTagify.addTags(user.likes)
+            dislikesTagify.addTags(user.dislikes)
+        }
+
+        var conn;
+        var form
+        var msg
+        var log
+
+        var modal
+        var updateSet
+        var likes
+        var dislikes 
+        var hi
+
+        var likesEl
+        var dislikesEl
+        var hiEl
+
+        var likesTagify;
+        var dislikesTagify;
+        var hiTagify;
+
         window.onload = function () {
-            var conn;
-            var form = document.getElementById("form")
-            var msg = document.getElementById("msg");
-            var log = document.getElementById("log");
+            form = document.getElementById("form")
+            msg = document.getElementById("msg");
+            log = document.getElementById("log");
+            modal = document.getElementById("modal")
+            updateSet = document.getElementById("updateSet")
+            likes = document.getElementById("likes")
+            dislikes = document.getElementById("dislikes")
+            hi = document.getElementById("hi")
+            likesEl = document.querySelector('input[id=likes]')
+            dislikesEl = document.querySelector('input[id=dislikes]')
+            hiEl = document.getElementById("hi")
 
-            var modal = document.getElementById("modal")
-            var updateSet = document.getElementById("updateSet")
-            var likes = document.getElementById("likes")
-            var dislikes = document.getElementById("dislikes")
-            var hi = document.getElementById("hi")
+            var whitelist = userlikes;
+            likesTagify = bindTagify(likesEl)
+            dislikesTagify = bindTagify(dislikesEl)
 
-            var likesEl = document.querySelector('input[id=likes]')
-            var dislikesEl = document.querySelector('input[id=dislikes]')
-            var hiEl = document.getElementById("hi")
-
-            var whitelist = ["A# .NET", "A# (Axiom)", "A-0 System", "A+", "A++", "ABAP", "ABC", "ABC ALGOL", "ABSET", "ABSYS", "ACC", "Accent", "Ace DASL", "ACL2", "Avicsoft", "ACT-III", "Action!", "ActionScript", "Ada", "Adenine", "Agda", "Agilent VEE", "Agora", "AIMMS", "Alef", "ALF", "ALGOL 58", "ALGOL 60", "ALGOL 68", "ALGOL W", "Alice", "Alma-0", "AmbientTalk", "Amiga E", "AMOS", "AMPL", "Apex (Salesforce.com)", "APL", "AppleScript", "Arc", "ARexx", "Argus", "AspectJ", "Assembly language", "ATS", "Ateji PX", "AutoHotkey", "Autocoder", "AutoIt", "AutoLISP / Visual LISP", "Averest", "AWK", "Axum", "Active Server Pages", "ASP.NET", "B", "Babbage", "Bash", "BASIC", "bc", "BCPL", "BeanShell", "Batch (Windows/Dos)", "Bertrand", "BETA", "Bigwig", "Bistro", "BitC", "BLISS", "Blockly", "BlooP", "Blue", "Boo", "Boomerang", "Bourne shell (including bash and ksh)", "BREW", "BPEL", "B", "C--", "C++ – ISO/IEC 14882", "C# – ISO/IEC 23270", "C/AL", "Caché ObjectScript", "C Shell", "Caml", "Cayenne", "CDuce", "Cecil", "Cesil", "Céu", "Ceylon", "CFEngine", "CFML", "Cg", "Ch", "Chapel", "Charity", "Charm", "Chef", "CHILL", "CHIP-8", "chomski", "ChucK", "CICS", "Cilk", "Citrine (programming language)", "CL (IBM)", "Claire", "Clarion", "Clean", "Clipper", "CLIPS", "CLIST", "Clojure", "CLU", "CMS-2", "COBOL – ISO/IEC 1989", "CobolScript – COBOL Scripting language", "Cobra", "CODE", "CoffeeScript", "ColdFusion", "COMAL", "Combined Programming Language (CPL)", "COMIT", "Common Intermediate Language (CIL)", "Common Lisp (also known as CL)", "COMPASS", "Component Pascal", "Constraint Handling Rules (CHR)", "COMTRAN", "Converge", "Cool", "Coq", "Coral 66", "Corn", "CorVision", "COWSEL", "CPL", "CPL", "Cryptol", "csh", "Csound", "CSP", "CUDA", "Curl", "Curry", "Cybil", "Cyclone", "Cython", "Java", "Javascript", "M2001", "M4", "M#", "Machine code", "MAD (Michigan Algorithm Decoder)", "MAD/I", "Magik", "Magma", "make", "Maple", "MAPPER now part of BIS", "MARK-IV now VISION:BUILDER", "Mary", "MASM Microsoft Assembly x86", "MATH-MATIC", "Mathematica", "MATLAB", "Maxima (see also Macsyma)", "Max (Max Msp – Graphical Programming Environment)", "Maya (MEL)", "MDL", "Mercury", "Mesa", "Metafont", "Microcode", "MicroScript", "MIIS", "Milk (programming language)", "MIMIC", "Mirah", "Miranda", "MIVA Script", "ML", "Model 204", "Modelica", "Modula", "Modula-2", "Modula-3", "Mohol", "MOO", "Mortran", "Mouse", "MPD", "Mathcad", "MSIL – deprecated name for CIL", "MSL", "MUMPS", "Mystic Programming L"];
-
-            var likesTagify = bindTagify(likesEl)
-            var dislikesTagify = bindTagify(dislikesEl)
-
-            var hiTagify = new Tagify(hiEl, {
+            hiTagify = new Tagify(hiEl, {
                 //  mixTagsInterpolator: ["{{", "}}"],
                 mode: 'mix',  // <--  Enable mixed-content
                 pattern: /@|#/,  // <--  Text starting with @ or # (if single, String can be used here)
@@ -94,7 +119,6 @@
                 tagify.on('input', function (e) {
                     if (e.detail.value.length <= 1) return
 
-                    console.log("onInput: ", e.detail);
                     tagify.settings.whitelist = whitelist // add already-existing tags to the new whitelist array
                     tagify
                         // render the suggestions dropdown.
@@ -102,15 +126,6 @@
                 })
 
                 return tagify
-            }
-
-            function showSettings() {
-                modal.style.display = ''
-                msg.value = "";
-
-                const user = getPassenger()
-                likesTagify.addTags(user.likes)
-                dislikesTagify.addTags(user.dislikes)
             }
 
             function generateLog(value, align = "left", bg = "white", html = false) {
@@ -198,7 +213,8 @@
                     conn.onopen = function (evt) {
                         appendLog(generateLog(welcome));
                         appendLog(generateLog(welcome1));
-                        appendLog(generateLog(welcome2, "left", "white", true));
+                        appendLog(generateLog(welcome2));
+                        appendLog(generateLog(welcome3, "left", "white", true));
                         appendLog(generateSys("End of introduction"));
                         msg.focus()
                     }
@@ -224,8 +240,13 @@
         xmlHttp.open("GET", "/likes", true)
         xmlHttp.onreadystatechange = function (evt) {
             if (xmlHttp.readyState == 4) {
-                likes = JSON.parse(evt.target.response)
-                console.log(evt, likes);
+                userlikes = JSON.parse(evt.target.response)
+                if (likesTagify) {
+                    likesTagify.settings.whitelist = userlikes
+                }
+                if (dislikesTagify) {
+                    dislikesTagify.settings.whitelist = userlikes
+                }
             }
         }
 
@@ -244,7 +265,7 @@
             --secondary: #E02E06;
             --text-main: #1a1a1a;
             --border-radius: 3px;
-            --bg-color: #f5fcf5;
+            --bg-color: #000a00;
         }
 
         body {
@@ -312,7 +333,8 @@
         }
 
         #log {
-            height: calc(100vh - 60px);
+            height: calc(100vh - 65px);
+            margin-bottom: 5px;
             overflow: auto;
         }
 
@@ -345,10 +367,11 @@
 
         #form #msg {
             flex: 1;
+            font-size: 1.2em;
         }
 
         .chat-li {
-            font-size: 1.4em;
+            font-size: 1.2em;
             color: var(--text-main);
             padding: 10px 30px;
             border-radius: 10px;
@@ -357,11 +380,11 @@
 
         .chat-li.left {
             margin-left: 5px;
-            margin-right: 100px;
+            margin-right: 60px;
         }
 
         .chat-li.right {
-            margin-left: 100px;
+            margin-left: 60px;
             margin-right: 5px;
         }
     </style>

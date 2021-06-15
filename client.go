@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,6 +25,11 @@ const (
 
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
+)
+
+var (
+	newline = []byte{'\n'}
+	space   = []byte{' '}
 )
 
 var upgrader = websocket.Upgrader{
@@ -66,8 +72,12 @@ func (me *User) likes(other *User) ([]string, int) {
 	return matchLikes(me.Likes, other.Likes)
 }
 
-func (me *User) disLikes(other *User) ([]string, int) {
-	return matchLikes(me.Dislikes, other.Likes)
+func (me *User) dislikes(other *User) ([]string, int) {
+	return matchLikes(me.Dislikes, other.Dislikes)
+}
+
+func (me *User) difflikes(other *User) ([]string, int) {
+	return matchLikes(me.Likes, other.Dislikes)
 }
 
 func matchLikes(l1 []string, l2 []string) ([]string, int) {
@@ -114,6 +124,7 @@ func (c *Client) readPump() {
 			}
 			break
 		}
+		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		c.hub.broadcast <- &Body{c.user.ID, message}
 	}
 }
@@ -148,6 +159,7 @@ func (c *Client) writePump() {
 			// Add queued chat messages to the current websocket message.
 			n := len(c.send)
 			for i := 0; i < n; i++ {
+				w.Write(newline)
 				w.Write(<-c.send)
 			}
 
