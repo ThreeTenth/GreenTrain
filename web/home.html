@@ -74,7 +74,7 @@
         var modal
         var updateSet
         var likes
-        var dislikes 
+        var dislikes
         var hi
 
         var likesEl
@@ -98,28 +98,23 @@
             dislikesEl = document.querySelector('input[id=dislikes]')
             hiEl = document.getElementById("hi")
 
-            var whitelist = userlikes;
             likesTagify = bindTagify(likesEl)
             dislikesTagify = bindTagify(dislikesEl)
 
             hiTagify = new Tagify(hiEl, {
-                //  mixTagsInterpolator: ["{{", "}}"],
                 mode: 'mix',  // <--  Enable mixed-content
-                pattern: /@|#/,  // <--  Text starting with @ or # (if single, String can be used here)
                 tagTextProp: 'text',  // <-- the default property (from whitelist item) for the text to be rendered in a tag element.
             })
 
             function bindTagify(input) {
                 // initialize Tagify on the above input node reference
-                var tagify = new Tagify(input, {
-                    whitelist: input.value.trim().split(/\s*,\s*/) // Array of values. stackoverflow.com/a/43375571/104380
-                })
+                var tagify = new Tagify(input)
 
                 // Chainable event listeners
                 tagify.on('input', function (e) {
                     if (e.detail.value.length <= 1) return
 
-                    tagify.settings.whitelist = whitelist // add already-existing tags to the new whitelist array
+                    tagify.settings.whitelist = userlikes // add already-existing tags to the new whitelist array
                     tagify
                         // render the suggestions dropdown.
                         .dropdown.show(e.detail.value);
@@ -232,10 +227,11 @@
                         appendLog(generateSys("Connection error."));
                     }
                     conn.onmessage = function (evt) {
-                        var messages = evt.data.split('\n');
-                        for (var i = 0; i < messages.length; i++) {
-                            appendLog(generateLog(messages[i]))
-                        }
+                        // var messages = evt.data.split('\n');
+                        // for (var i = 0; i < messages.length; i++) {
+                        //     appendLog(generateLog(messages[i]))
+                        // }
+                        appendLog(generateLog(evt.data))
                     };
                 } else {
                     appendLog(generateSys("Your browser does not support WebSockets."));
@@ -248,12 +244,6 @@
         xmlHttp.onreadystatechange = function (evt) {
             if (xmlHttp.readyState == 4) {
                 userlikes = JSON.parse(evt.target.response)
-                if (likesTagify) {
-                    likesTagify.settings.whitelist = userlikes
-                }
-                if (dislikesTagify) {
-                    dislikesTagify.settings.whitelist = userlikes
-                }
             }
         }
 
