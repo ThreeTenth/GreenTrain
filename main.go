@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gobuffalo/packr/v2"
 )
@@ -48,6 +49,8 @@ func userHandle(h *Hub, w http.ResponseWriter, r *http.Request) {
 
 	_, joined := h.clients[_user.ID]
 
+	_user.Hi = strings.Trim(_user.Hi, "\n")
+	_user.Hi = strings.Trim(_user.Hi, " ")
 	if !joined {
 		h.waitings[_user.ID] = &_user
 	} else {

@@ -236,7 +236,7 @@ func (h *Hub) find(c *Client) {
 
 	if ok {
 		h.friends[v.user.ID] = c.user
-		if c.user.Hi == "" {
+		if 0 == len(c.user.Hi) {
 			sendMessage(h, v, HI)
 		} else {
 			sendMessage(h, v, []byte(c.user.Hi))
