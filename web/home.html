@@ -145,8 +145,15 @@
                 }
                 span.classList = "chat-li " + align
                 span.style.backgroundColor = bg
-                item.style.textAlign = align
                 item.style.paddingTop = "18px"
+
+                if (align === "right") {
+                    var leftspan = document.createElement("div")
+                    leftspan.style.flex = "1"
+                    item.style.display = "flex"
+                    item.appendChild(leftspan)
+                }
+
                 item.appendChild(span)
 
                 return item
