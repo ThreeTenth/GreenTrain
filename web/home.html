@@ -9,7 +9,7 @@
         const welcome = "呜~~呜~~，欢迎乘坐绿皮车~"
         const welcome1 = "绿皮车是一个模拟列车旅行，随机遇见同座旅友的产品。在绿皮车上，我们随机匹配一个喜好相似的旅友，作为你本次旅行的朋友。"
         const welcome2 = "当到达目的地后，我们挥一挥衣袖，把列车上的一切都给忘却。"
-        const welcome3 = `回复或者点击 "<a onclick="showSettings()">:资料</a>" ，可以设置自己的喜好`
+        const welcome3 = `点击或者发送 "<a onclick="showSettings()">:资料</a>" ，可以设置自己的喜好`
 
         var userlikes = [];
 
@@ -50,14 +50,24 @@
             var user = JSON.parse(passenger)
             if (user == null) {
                 user = {
-                    id: uuidv4()
+                    id: uuidv4(),
+                    hi: "",
                 }
                 localStorage.setItem('passenger', JSON.stringify(user));
             }
             return user
         }
 
-        function showSettings() {
+        function showSettings(set = true) {
+            if (set) {
+                setTitle.innerText = "User info"
+                updateSet.innerText = "Update"
+                closeSet.style.display = ""
+            } else {
+                setTitle.innerText = "What's your likes and hi"
+                updateSet.innerText = "Join"
+                closeSet.style.display = "none"
+            }
             modal.style.display = ''
             msg.value = "";
 
@@ -72,10 +82,11 @@
         var log
 
         var modal
+        var setTitle
         var updateSet
+        var closeSet
         var likes
         var dislikes
-        var hi
 
         var likesEl
         var dislikesEl
@@ -90,10 +101,11 @@
             msg = document.getElementById("msg");
             log = document.getElementById("log");
             modal = document.getElementById("modal")
+            setTitle = document.getElementById("setTitle")
             updateSet = document.getElementById("updateSet")
+            closeSet = document.getElementById("closeSet")
             likes = document.getElementById("likes")
             dislikes = document.getElementById("dislikes")
-            hi = document.getElementById("hi")
             likesEl = document.querySelector('input[id=likes]')
             dislikesEl = document.querySelector('input[id=dislikes]')
             hiEl = document.getElementById("hi")
@@ -158,6 +170,41 @@
                 }
             }
 
+            function login(user) {
+                onUserHandle("PUT", user, function () {
+                    if (window["WebSocket"]) {
+                        var protocol
+                        if ("https:" === document.location.protocol) {
+                            protocol = "wss://"
+                        } else {
+                            protocol = "ws://"
+                        }
+                        conn = new WebSocket(protocol + document.location.host + "/start?userId=" + user.id);
+                        conn.onopen = function (evt) {
+                            appendLog(generateLog(welcome));
+                            appendLog(generateLog(welcome1));
+                            appendLog(generateLog(welcome2));
+                            appendLog(generateLog(welcome3, "left", "white", true));
+                            appendLog(generateSys("End of introduction"));
+                            msg.focus()
+                            modal.style.display = "none"
+                        }
+                        conn.onclose = function (evt) {
+                            appendLog(generateSys("Connection closed, please refresh and try again."));
+                        };
+                        conn.onerror = function (evt) {
+                            appendLog(generateSys("Connection error."));
+                        }
+                        conn.onmessage = function (evt) {
+                            appendLog(generateLog(evt.data))
+                        };
+                    } else {
+                        appendLog(generateSys("Your browser does not support WebSockets."));
+                    }
+                })
+            }
+
+
             form.onsubmit = function (evt) {
                 if (!conn) {
                     return false;
@@ -179,64 +226,56 @@
                 return false;
             };
 
-            document.getElementById("updateSet").onclick = function () {
+            updateSet.onclick = function (e) {
                 var user = getPassenger()
-                if (hi.value) {
-                    user.hi = hi.value
+
+                e.preventDefault()
+
+                const isLikesValid = !!likesTagify.value.length
+                const isHiValid = !!hiEl.value.trim().length
+
+                if (!isLikesValid) {
+                    likesTagify.DOM.scope.classList.toggle("tagify--invalid", !isLikesValid)
                 }
-                if (likes.value) {
-                    user.likes = JSON.parse(likes.value).map(item => item.value)
+
+                if (!isHiValid) {
+                    hiTagify.DOM.scope.classList.toggle("tagify--invalid", !isHiValid)
                 }
-                if (dislikes.value) {
-                    user.dislikes = JSON.parse(dislikes.value).map(item => item.value)
+
+                if (!(isLikesValid && isHiValid)) {
+                    setTimeout(function () {
+                        likesTagify.DOM.scope.classList.toggle("tagify--invalid", false)
+                        hiTagify.DOM.scope.classList.toggle("tagify--invalid", false)
+                    }, 2000)
+                    return false
                 }
-                console.log(user);
-                onUserHandle("PUSH", user, function (ok) {
-                    appendLog(generateSys(ok ? "Update successful" : "Update failed"))
-                    modal.style.display = "none"
-                })
+
+                user.hi = hiEl.value
+                user.likes = likesTagify.value
+                user.dislikes = dislikesTagify.value
                 localStorage.setItem('passenger', JSON.stringify(user));
+                if (conn) {
+                    onUserHandle("PUSH", user, function (ok) {
+                        appendLog(generateSys(ok ? "Update successful" : "Update failed"))
+                        modal.style.display = "none"
+                    })
+                } else {
+                    login(user)
+                }
+
+                return false
             }
 
-            document.getElementById("closeSet").onclick = function () {
+            closeSet.onclick = function () {
                 modal.style.display = "none"
             }
 
             var user = getPassenger()
-            onUserHandle("PUT", user, function () {
-                if (window["WebSocket"]) {
-                    var protocol
-                    if ("https:" === document.location.protocol) {
-                        protocol = "wss://"
-                    } else {
-                        protocol = "ws://"
-                    }
-                    conn = new WebSocket(protocol + document.location.host + "/start?userId=" + user.id);
-                    conn.onopen = function (evt) {
-                        appendLog(generateLog(welcome));
-                        appendLog(generateLog(welcome1));
-                        appendLog(generateLog(welcome2));
-                        appendLog(generateLog(welcome3, "left", "white", true));
-                        appendLog(generateSys("End of introduction"));
-                        msg.focus()
-                    }
-                    conn.onclose = function (evt) {
-                        appendLog(generateSys("Connection closed, please refresh and try again."));
-                    };
-                    conn.onerror = function (evt) {
-                        appendLog(generateSys("Connection error."));
-                    }
-                    conn.onmessage = function (evt) {
-                        // var messages = evt.data.split('\n');
-                        // for (var i = 0; i < messages.length; i++) {
-                        //     appendLog(generateLog(messages[i]))
-                        // }
-                        appendLog(generateLog(evt.data))
-                    };
-                } else {
-                    appendLog(generateSys("Your browser does not support WebSockets."));
-                }
-            })
+            if (user && user.likes && user.dislikes) {
+                login(user)
+            } else {
+                showSettings(false)
+            }
         };
 
         var xmlHttp = createXMLHttpRequest()
@@ -399,15 +438,15 @@
     <!-- Settings -->
     <div id="modal" style="display: none;">
         <div id="settings">
-            <h2>User info</h2>
+            <h2 id="setTitle">User info</h2>
             <p>完善的信息可以为你找到更加合适旅友哦~</p>
             <div id="set">
-                <label>Likes</label>
-                <input placeholder='write your likes' type="text" id="likes" />
+                <label>Likes *</label>
+                <input placeholder='write your likes' type="text" id="likes" required autofocus />
                 <label>Dislikes</label>
                 <input placeholder='write your dislikes' type="text" id="dislikes" />
-                <label>Hi</label>
-                <textarea placeholder='Write your opening remarks' id="hi"></textarea>
+                <label>Hi *</label>
+                <textarea placeholder='Write your opening remarks' id="hi" required>Hi~</textarea>
                 <div style="display: flex; justify-content: center; align-items: center;">
                     <button id="closeSet" style="background-color: var(--secondary);">Close</button>
                     <button id="updateSet">Update</button>
@@ -425,8 +464,7 @@
     <!-- About -->
     <div id="about"></div>
     <script>
-        var hi = document.getElementById("hi")
-        hi.value = getPassenger().hi
+        document.getElementById("hi").value = getPassenger().hi
     </script>
     <script src="https://cdn.jsdelivr.net/npm/uuid@latest/dist/umd/uuidv4.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/yaireo/tagify@4.3.0/dist/tagify.min.js"></script>
