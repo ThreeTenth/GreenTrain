@@ -80,16 +80,15 @@ func matchLikes(l1 []string, l2 []string) ([]string, int) {
 	}
 
 	q := likeRegexp(l1)
-	p := strings.Join(l2, ",")
+	p := strings.Join(l2, ",") + ","
 
 	reg := regexp.MustCompile(q)
 	group := reg.FindAllString(p, -1)
 
-	// 讨厌的数量最多是本人所有讨厌的事物的数量
 	result := make([]string, 0, len(l1))
 	for _, v := range group {
 		if v != "" {
-			result = append(result, v)
+			result = append(result, v[0:len(v)-1])
 		}
 	}
 

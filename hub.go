@@ -338,7 +338,7 @@ func likeRegexp(elems []string) string {
 	case 0:
 		return ""
 	case 1:
-		return elems[0]
+		return elems[0] + ","
 	}
 
 	result := ""
@@ -346,7 +346,7 @@ func likeRegexp(elems []string) string {
 		// (apple)? 可以匹配一个或零个的相同字符串，
 		// 当匹配结果为一个时，表示有共同喜好（例子中为 apple），
 		// 为零个时，表示该爱好对方没有
-		result += fmt.Sprintf("(%v)?", elem)
+		result += fmt.Sprintf("(%v,)?", elem)
 	}
 
 	return result
