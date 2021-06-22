@@ -258,8 +258,8 @@
                 }
 
                 user.hi = hiEl.value
-                user.likes = likesTagify.value
-                user.dislikes = dislikesTagify.value
+                user.likes = likesTagify.value.map(item => item.value)
+                user.dislikes = dislikesTagify.value.map(item => item.value)
                 localStorage.setItem('passenger', JSON.stringify(user));
                 if (conn) {
                     onUserHandle("PUSH", user, function (ok) {
